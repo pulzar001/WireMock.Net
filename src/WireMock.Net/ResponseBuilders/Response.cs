@@ -34,14 +34,9 @@ namespace WireMock.ResponseBuilders
         public bool UseTransformer { get; private set; }
 
         /// <summary>
-        /// The Proxy URL to use.
+        /// Gets the proxy and record settings.
         /// </summary>
-        public string ProxyUrl { get; private set; }
-
-        /// <summary>
-        /// The client X509Certificate2 Thumbprint or SubjectName to use.
-        /// </summary>
-        public string ClientX509Certificate2ThumbprintOrSubjectName { get; private set; }
+        public IProxyAndRecordSettings ProxyAndRecordSettings { get; private set; }
 
         /// <summary>
         /// Gets the response message.
@@ -315,10 +310,13 @@ namespace WireMock.ResponseBuilders
         {
             Check.NotNullOrEmpty(proxyUrl, nameof(proxyUrl));
 
-            ProxyUrl = proxyUrl;
-            ClientX509Certificate2ThumbprintOrSubjectName = clientX509Certificate2ThumbprintOrSubjectName;
-            _httpClientForProxy = HttpClientHelper.CreateHttpClient(clientX509Certificate2ThumbprintOrSubjectName);
-            return this;
+            var proxyAndRecordSettings = new ProxyAndRecordSettings
+            {
+                Url = proxyUrl,
+                ClientX509Certificate2ThumbprintOrSubjectName = clientX509Certificate2ThumbprintOrSubjectName
+            };
+
+            return WithProxy(proxyAndRecordSettings);
         }
 
         /// <inheritdoc cref="IProxyResponseBuilder.WithProxy(IProxyAndRecordSettings)"/>
@@ -326,7 +324,10 @@ namespace WireMock.ResponseBuilders
         {
             Check.NotNull(settings, nameof(settings));
 
-            return WithProxy(settings.Url, settings.ClientX509Certificate2ThumbprintOrSubjectName);
+            ProxyAndRecordSettings = settings;
+
+            _httpClientForProxy = HttpClientHelper.CreateHttpClient(settings.ClientX509Certificate2ThumbprintOrSubjectName);
+            return this;
         }
 
         /// <inheritdoc cref="ICallbackResponseBuilder.WithCallback"/>
@@ -353,10 +354,10 @@ namespace WireMock.ResponseBuilders
                 await Task.Delay(Delay.Value);
             }
 
-            if (ProxyUrl != null && _httpClientForProxy != null)
+            if (ProxyAndRecordSettings != null)
             {
                 var requestUri = new Uri(requestMessage.Url);
-                var proxyUri = new Uri(ProxyUrl);
+                var proxyUri = new Uri(ProxyAndRecordSettings.Url);
                 var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
 
                 return await HttpClientHelper.SendAsync(_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri);

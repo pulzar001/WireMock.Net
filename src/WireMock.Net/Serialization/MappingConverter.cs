@@ -88,7 +88,7 @@ namespace WireMock.Serialization
                 }
             };
 
-            if (!string.IsNullOrEmpty(response.ProxyUrl))
+            if (!string.IsNullOrEmpty(response.ProxyAndRecordSettings?.Url))
             {
                 mappingModel.Response.StatusCode = null;
                 mappingModel.Response.Headers = null;
@@ -101,7 +101,7 @@ namespace WireMock.Serialization
                 mappingModel.Response.BodyAsFileIsCached = null;
                 mappingModel.Response.UseTransformer = false;
                 mappingModel.Response.BodyEncoding = null;
-                mappingModel.Response.ProxyUrl = response.ProxyUrl;
+                mappingModel.Response.ProxyUrl = response.ProxyAndRecordSettings?.Url;
             }
             else
             {

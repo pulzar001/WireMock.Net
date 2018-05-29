@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using NFluent;
+using WireMock.Matchers;
+using WireMock.Matchers.Request;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -74,10 +76,112 @@ namespace WireMock.Net.Tests
 
             // check that new proxied mapping is added
             Check.That(_server.Mappings).HasSize(2);
+        }
 
-            //var newMapping = _server.Mappings.First(m => m.Guid != guid);
-            //var matcher = ((Request)newMapping.RequestMatcher).GetRequestMessageMatchers<RequestMessageHeaderMatcher>().FirstOrDefault(m => m.Name == "bbb");
-            //Check.That(matcher).IsNotNull();
+        [Fact]
+        public async Task FluentMockServer_Proxy_Should_Save_Body_For_ContentType_ApplicationJson_1()
+        {
+            // Assign (create a server instance which acts as the server which is proxied : return a json message and the Content-Type header set to application/json)
+            _serverForProxyForwarding = FluentMockServer.Start();
+            _serverForProxyForwarding
+                .Given(Request.Create().WithPath("/*"))
+                .RespondWith(
+                    Response.Create()
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBodyAsJson(new { answer = 42 })
+                );
+
+            // Create a instance which will be tested
+            var settings = new FluentMockServerSettings
+            {
+                ProxyAndRecordSettings = new ProxyAndRecordSettings
+                {
+                    Url = _serverForProxyForwarding.Urls[0],
+                    SaveMapping = true,
+                    SaveMappingToFile = false
+                }
+            };
+            _server = FluentMockServer.Start(settings);
+            Check.That(_server.Mappings).HasSize(1);
+
+            var guid = _server.Mappings.First().Guid;
+
+            // Act (create a POST request with a json body and the Content-Type header set to application/json
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(_server.Urls[0]),
+                Content = new StringContent("{ \"question\": 1 }")
+            };
+            requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            // Send the request
+            var response = await new HttpClient().SendAsync(requestMessage);
+            var body = await response.Content.ReadAsStringAsync();
+            Check.That(body).IsEqualTo("{\"answer\":42}");
+            Check.That(response.Content.Headers.ContentType.MediaType).Contains("application/json");
+
+            // Assert (check the request which arrives at the proxied server)
+            var receivedRequest = _serverForProxyForwarding.LogEntries.First().RequestMessage;
+            Check.That(receivedRequest.Body).IsEqualTo("{\"question\":1}");
+            Check.That(receivedRequest.Headers["Content-Type"].First()).Contains("application/json");
+
+            // check that new recorded mapping is added to the server under test
+            Check.That(_server.Mappings).HasSize(2);
+
+            var newMapping = _server.Mappings.First(m => m.Guid != guid);
+            var matcher = ((Request)newMapping.RequestMatcher).GetRequestMessageMatchers<RequestMessageBodyMatcher>().First();
+            Check.That(matcher.Matcher).IsInstanceOf<ExactMatcher>();
+
+            var exactMatcher = (ExactMatcher)matcher.Matcher;
+            Check.That(exactMatcher.GetPatterns()).Contains("{ \"question\": 1 }");
+        }
+
+        [Fact]
+        public async Task FluentMockServer_Proxy_Should_Save_Body_For_ContentType_ApplicationJson_2()
+        {
+            // Assign (create a server instance which acts as the server which is proxied : return a json message and the Content-Type header set to application/json)
+            _serverForProxyForwarding = FluentMockServer.Start();
+            _serverForProxyForwarding
+                .Given(Request.Create().WithPath("/*"))
+                .RespondWith(
+                    Response.Create()
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBodyAsJson(new { answer = 42 })
+                );
+
+            // Create a instance which will be tested
+            var guid = Guid.NewGuid();
+            var proxyAndRecordSettings = new ProxyAndRecordSettings
+            {
+                Url = _serverForProxyForwarding.Urls[0],
+                SaveMapping = true,
+                SaveMappingToFile = false
+            };
+            _server = FluentMockServer.Start();
+            _server.Given(Request.Create().WithPath("/*")).WithGuid(guid).RespondWith(Response.Create().WithProxy(proxyAndRecordSettings));
+
+            // Act (create a POST request with a json body and the Content-Type header set to application/json
+            var requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(_server.Urls[0]),
+                Content = new StringContent("{ \"question\": 1 }")
+            };
+            requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            // Send the request
+            var response = await new HttpClient().SendAsync(requestMessage);
+            var body = await response.Content.ReadAsStringAsync();
+            Check.That(body).IsEqualTo("{\"answer\":42}");
+            Check.That(response.Content.Headers.ContentType.MediaType).Contains("application/json");
+
+            // Assert (check the request which arrives at the proxied server)
+            var receivedRequest = _serverForProxyForwarding.LogEntries.First().RequestMessage;
+            Check.That(receivedRequest.Body).IsEqualTo("{\"question\":1}");
+            Check.That(receivedRequest.Headers["Content-Type"].First()).Contains("application/json");
+
+            Check.That(_server.Mappings).HasSize(1);
         }
 
         [Fact]
