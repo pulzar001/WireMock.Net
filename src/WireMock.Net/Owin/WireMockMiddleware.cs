@@ -69,6 +69,15 @@ namespace WireMock.Owin
 
         private async Task InvokeInternal(IContext ctx)
         {
+#if !USE_ASPNETCORE
+            if (ctx.Get<bool>("gotoNext"))
+            {
+                await Next?.Invoke(ctx);
+                return;
+            }
+#else
+#endif
+
             var request = await _requestMapper.MapAsync(ctx.Request, _options);
 
             bool logRequest = false;

@@ -1,8 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using WireMock.Admin.Requests;
 using WireMock.Logging;
-using WireMock.Models.Requests;
 using WireMock.Server;
 using WireMock.Settings;
 
@@ -42,6 +43,11 @@ namespace WireMock.Net.WebApplication
             public void Error(string formatString, params object[] args)
             {
                 _logger.LogError(formatString, args);
+            }
+
+            public void Error(string formatString, Exception exception)
+            {
+                _logger.LogError(formatString, exception);
             }
 
             public void DebugRequestResponse(LogEntryModel logEntryModel, bool isAdminrequest)

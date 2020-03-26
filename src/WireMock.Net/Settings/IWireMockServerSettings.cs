@@ -151,5 +151,8 @@ namespace WireMock.Settings
         /// </summary>
         [PublicAPI]
         bool? DisableJsonBodyParsing { get; set; }
+        
+        [PublicAPI]
+        string[] IgnorePrefixURLs { get; set; }
     }
 }

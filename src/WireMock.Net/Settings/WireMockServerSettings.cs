@@ -108,5 +108,8 @@ namespace WireMock.Settings
         /// <inheritdoc cref="IWireMockServerSettings.DisableJsonBodyParsing"/>
         [PublicAPI]
         public bool? DisableJsonBodyParsing { get; set; }
+
+        [PublicAPI]
+        public string[] IgnorePrefixURLs { get; set; }
     }
 }

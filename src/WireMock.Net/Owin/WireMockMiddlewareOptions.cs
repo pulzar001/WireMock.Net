@@ -48,5 +48,7 @@ namespace WireMock.Owin
 
         /// <inheritdoc cref="IWireMockMiddlewareOptions.DisableResponseBodyParsing"/>
         public bool? DisableJsonBodyParsing { get; set; }
+
+        public string[] IgnorePrefixURLs { get; set; }
     }
 }
