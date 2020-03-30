@@ -305,9 +305,25 @@ namespace WireMock.Server
         
         private async Task<ResponseMessage> ProxyAndRecordAsyncWithHttpClient(RequestMessage requestMessage, IWireMockServerSettings settings, HttpClient p_httpClientForProxy)
         {
-            var requestUri = new Uri(requestMessage.Url);
+            Uri requestUri;
+            Uri proxyUriWithRequestPathAndQuery;
+            
             var proxyUri = new Uri(settings.ProxyAndRecordSettings.Url);
-            var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
+
+            if (string.IsNullOrEmpty(settings.ProxyAndRecordSettings.PrefixURL))
+            {
+                requestUri = new Uri(requestMessage.Url);
+                proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
+            }
+            else
+            {
+                int idx;
+
+                idx = requestMessage.Url.IndexOf(settings.ProxyAndRecordSettings.PrefixURL, StringComparison.Ordinal);
+                requestUri = new Uri(idx < 0 ? requestMessage.Url : requestMessage.Url.Remove(idx, settings.ProxyAndRecordSettings.PrefixURL.Length));
+                idx = requestUri.PathAndQuery.IndexOf(settings.ProxyAndRecordSettings.PrefixURL, StringComparison.Ordinal);
+                proxyUriWithRequestPathAndQuery = new Uri(proxyUri, idx < 0 ? requestUri.PathAndQuery : requestUri.PathAndQuery.Remove(idx, settings.ProxyAndRecordSettings.PrefixURL.Length));
+            }
 
             var responseMessage = await HttpClientHelper.SendAsync(p_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
 
