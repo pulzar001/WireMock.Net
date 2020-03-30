@@ -58,5 +58,8 @@ namespace WireMock.Settings
         /// <inheritdoc cref="IProxyAndRecordSettings.AllowAutoRedirect"/>
         [PublicAPI]
         public bool? AllowAutoRedirect { get; set; }
+
+        [PublicAPI]
+        public string PrefixURL { get; set; }
     }
 }

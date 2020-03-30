@@ -54,5 +54,7 @@ namespace WireMock.Settings
         /// Proxy requests should follow redirection (30x).
         /// </summary>
         bool? AllowAutoRedirect { get; set; }
+        
+        string PrefixURL { get; set; }
     }
 }

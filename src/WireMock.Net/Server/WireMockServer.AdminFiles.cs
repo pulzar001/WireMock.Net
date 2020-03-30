@@ -1,7 +1,12 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using WireMock.Http;
 using WireMock.Matchers;
+using WireMock.RequestBuilders;
+using WireMock.ResponseProviders;
+using WireMock.Settings;
 using WireMock.Types;
 using WireMock.Util;
 

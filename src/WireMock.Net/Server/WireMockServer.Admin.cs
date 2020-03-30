@@ -42,10 +42,12 @@ namespace WireMock.Server
         private const string AdminSettings = "/__admin/settings";
         private const string AdminScenarios = "/__admin/scenarios";
         private const string QueryParamReloadStaticMappings = "reloadStaticMappings";
+        private const string AdminProxyRecord = "/__admin/record";
 
         private readonly RegexMatcher _adminRequestContentTypeJson = new ContentTypeMatcher(ContentTypeJson, true);
         private readonly RegexMatcher _adminMappingsGuidPathMatcher = new RegexMatcher(@"^\/__admin\/mappings\/([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})$");
         private readonly RegexMatcher _adminRequestsGuidPathMatcher = new RegexMatcher(@"^\/__admin\/requests\/([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})$");
+        private readonly RegexMatcher _adminRecordPathMatcher = new RegexMatcher(MatchBehaviour.AcceptOnMatch, @"^\/__admin\/record\/.*$");
 
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
         {
@@ -109,6 +111,11 @@ namespace WireMock.Server
             Given(Request.Create().WithPath(_adminFilesFilenamePathMatcher).UsingGet()).AtPriority(AdminPriority).RespondWith(new DynamicResponseProvider(FileGet));
             Given(Request.Create().WithPath(_adminFilesFilenamePathMatcher).UsingHead()).AtPriority(AdminPriority).RespondWith(new DynamicResponseProvider(FileHead));
             Given(Request.Create().WithPath(_adminFilesFilenamePathMatcher).UsingDelete()).AtPriority(AdminPriority).RespondWith(new DynamicResponseProvider(FileDelete));
+            
+            // __admin/record
+            Given(Request.Create().WithPath(AdminProxyRecord).UsingPost()).AtPriority(AdminPriority).RespondWith(new DynamicResponseProvider(RecordPost));
+            // __admin/record/{prefixURL}
+            Given(Request.Create().WithPath(_adminRecordPathMatcher).UsingDelete()).AtPriority(AdminPriority).RespondWith(new DynamicResponseProvider(RecordDelete));
         }
         #endregion
 
@@ -276,6 +283,33 @@ namespace WireMock.Server
             var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
 
             var responseMessage = await HttpClientHelper.SendAsync(_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
+
+            if (HttpStatusRangeParser.IsMatch(settings.ProxyAndRecordSettings.SaveMappingForStatusCodePattern, responseMessage.StatusCode) &&
+                (settings.ProxyAndRecordSettings.SaveMapping || settings.ProxyAndRecordSettings.SaveMappingToFile))
+            {
+                var mapping = ToMapping(requestMessage, responseMessage, settings.ProxyAndRecordSettings.BlackListedHeaders ?? new string[] { }, settings.ProxyAndRecordSettings.BlackListedCookies ?? new string[] { });
+
+                if (settings.ProxyAndRecordSettings.SaveMapping)
+                {
+                    _options.Mappings.TryAdd(mapping.Guid, mapping);
+                }
+
+                if (settings.ProxyAndRecordSettings.SaveMappingToFile)
+                {
+                    SaveMappingToFile(mapping);
+                }
+            }
+
+            return responseMessage;
+        }
+        
+        private async Task<ResponseMessage> ProxyAndRecordAsyncWithHttpClient(RequestMessage requestMessage, IWireMockServerSettings settings, HttpClient p_httpClientForProxy)
+        {
+            var requestUri = new Uri(requestMessage.Url);
+            var proxyUri = new Uri(settings.ProxyAndRecordSettings.Url);
+            var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
+
+            var responseMessage = await HttpClientHelper.SendAsync(p_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
 
             if (HttpStatusRangeParser.IsMatch(settings.ProxyAndRecordSettings.SaveMappingForStatusCodePattern, responseMessage.StatusCode) &&
                 (settings.ProxyAndRecordSettings.SaveMapping || settings.ProxyAndRecordSettings.SaveMappingToFile))
@@ -724,6 +758,55 @@ namespace WireMock.Server
 
             return ResponseMessageBuilder.Create("Scenarios reset");
         }
+        #endregion
+        
+        #region record
+        private ResponseMessage RecordPost(RequestMessage requestMessage)
+        {
+            HttpClient httpClientForProxy;
+            IProxyAndRecordSettings settings;
+            IRespondWithAProvider respondProvider;
+            IWireMockServerSettings wiremockSettings;
+            
+            wiremockSettings = new WireMockServerSettings();
+            settings = DeserializeObject<ProxyAndRecordSettings>(requestMessage);
+            wiremockSettings.ProxyAndRecordSettings = settings;
+
+            httpClientForProxy = HttpClientHelper.CreateHttpClient(settings);
+
+            if (string.IsNullOrEmpty(settings.PrefixURL))
+            {
+                respondProvider = Given(Request.Create().WithPath("/*").UsingAnyMethod());
+                respondProvider.WithTitle("RecordProxy_");
+            }
+            else
+            {
+                respondProvider = Given(Request.Create().WithPath(settings.PrefixURL + "/*").UsingAnyMethod());
+                respondProvider.WithTitle("RecordProxy_" + settings.PrefixURL.Substring(1));
+            }
+
+            respondProvider.RespondWith(new ProxyAsyncResponseProvider(ProxyAndRecordAsyncWithHttpClient, wiremockSettings, httpClientForProxy));
+
+            return ResponseMessageBuilder.Create("Record started");
+        }
+
+        private ResponseMessage RecordDelete(RequestMessage requestMessage)
+        {
+            string prefixURL;
+
+            prefixURL = requestMessage.Path.Substring(AdminProxyRecord.Length + 1);
+
+            foreach (IMapping mapping in _options.Mappings.Values)
+            {
+                if (mapping.Title == "RecordProxy_" + prefixURL)
+                {
+                    _options.Mappings.TryRemove(mapping.Guid, out IMapping removedMapping);
+                }
+            }
+            
+            return ResponseMessageBuilder.Create("Recording removed " + prefixURL);
+        }
+
         #endregion
 
         private IRequestBuilder InitRequestBuilder(RequestModel requestModel, bool pathOrUrlRequired)
