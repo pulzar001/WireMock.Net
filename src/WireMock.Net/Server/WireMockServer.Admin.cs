@@ -282,7 +282,13 @@ namespace WireMock.Server
             var proxyUri = new Uri(settings.ProxyAndRecordSettings.Url);
             var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
 
-            var responseMessage = await HttpClientHelper.SendAsync(_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
+            var responseMessage = await HttpClientHelper.SendAsync(
+                _httpClientForProxy,
+                requestMessage,
+                proxyUriWithRequestPathAndQuery.AbsoluteUri,
+                !settings.DisableJsonBodyParsing.GetValueOrDefault(false),
+                !settings.DisableRequestBodyDecompressing.GetValueOrDefault(false)
+            );
 
             if (HttpStatusRangeParser.IsMatch(settings.ProxyAndRecordSettings.SaveMappingForStatusCodePattern, responseMessage.StatusCode) &&
                 (settings.ProxyAndRecordSettings.SaveMapping || settings.ProxyAndRecordSettings.SaveMappingToFile))
@@ -325,7 +331,7 @@ namespace WireMock.Server
                 proxyUriWithRequestPathAndQuery = new Uri(proxyUri, idx < 0 ? requestUri.PathAndQuery : requestUri.PathAndQuery.Remove(idx, settings.ProxyAndRecordSettings.PrefixURL.Length));
             }
 
-            var responseMessage = await HttpClientHelper.SendAsync(p_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
+            var responseMessage = await HttpClientHelper.SendAsync(p_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false), !settings.DisableRequestBodyDecompressing.GetValueOrDefault(false));
 
             if (HttpStatusRangeParser.IsMatch(settings.ProxyAndRecordSettings.SaveMappingForStatusCodePattern, responseMessage.StatusCode) &&
                 (settings.ProxyAndRecordSettings.SaveMapping || settings.ProxyAndRecordSettings.SaveMappingToFile))

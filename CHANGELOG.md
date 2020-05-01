@@ -1,3 +1,31 @@
+# 1.2.7.0 (30 April 2020)
+- [#461](https://github.com/WireMock-Net/WireMock.Net/pull/461) - Support Path in ProxyUrl contributed by [StefH](https://github.com/StefH)
+- [#459](https://github.com/WireMock-Net/WireMock.Net/issues/459) - When respond with proxy requestMessage.Url is used, not AbsoluteUrl [bug]
+
+# 1.2.6.0 (29 April 2020)
+- [#460](https://github.com/WireMock-Net/WireMock.Net/pull/460) - When using ResponseMessageTransformer : keep BodyEncoding [bug] contributed by [StefH](https://github.com/StefH)
+- [#458](https://github.com/WireMock-Net/WireMock.Net/issues/458) - Response BodyAsString loses BodyData.Encoding when UseTransformer = true [bug]
+
+# 1.2.5.0 (17 April 2020)
+- [#454](https://github.com/WireMock-Net/WireMock.Net/pull/454) - Fix port = 0 for net452 [bug] contributed by [StefH](https://github.com/StefH)
+- [#453](https://github.com/WireMock-Net/WireMock.Net/issues/453) - MockServer not starting  [bug]
+
+# 1.2.4.0 (10 April 2020)
+- [#439](https://github.com/WireMock-Net/WireMock.Net/pull/439) - Add support for GZip and Deflate [feature] contributed by [StefH](https://github.com/StefH)
+- [#444](https://github.com/WireMock-Net/WireMock.Net/pull/444) - Add readme.md + license from mock4net [feature] contributed by [StefH](https://github.com/StefH)
+- [#451](https://github.com/WireMock-Net/WireMock.Net/pull/451) - Update NuGet dependencies (e.g. coverage related) to fix CI-build [feature] contributed by [StefH](https://github.com/StefH)
+- [#452](https://github.com/WireMock-Net/WireMock.Net/pull/452) - Add ValidatedNotNullAttribute (for SonarQube) [refactor] contributed by [StefH](https://github.com/StefH)
+- [#426](https://github.com/WireMock-Net/WireMock.Net/issues/426) - Add support for compressed requests, such as GZIP or DEFLATE [feature]
+
+# 1.2.3.0 (01 April 2020)
+- [#449](https://github.com/WireMock-Net/WireMock.Net/pull/449) - Netstandard21 [feature] contributed by [StefH](https://github.com/StefH)
+- [#447](https://github.com/WireMock-Net/WireMock.Net/issues/447) - Add support for .NET Standard 2.1 / .NET Core 3.1 [feature]
+- [#448](https://github.com/WireMock-Net/WireMock.Net/issues/448) - WireMock.Net is not compatible with Microsoft.VisualStudio.Web.CodeGeneration.Design 3.1.1 [bug]
+
+# 1.2.2.0 (25 March 2020)
+- [#446](https://github.com/WireMock-Net/WireMock.Net/pull/446) - When port is provided: WireMockServer still takes a random port [bug] contributed by [StefH](https://github.com/StefH)
+- [#445](https://github.com/WireMock-Net/WireMock.Net/issues/445) - Port where WireMockServer listens to - v1.2x [bug]
+
 # 1.2.1.0 (17 March 2020)
 - [#442](https://github.com/WireMock-Net/WireMock.Net/pull/442) - Fix Null body in handlebars transformation [bug] contributed by [StefH](https://github.com/StefH)
 

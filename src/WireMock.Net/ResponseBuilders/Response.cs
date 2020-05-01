@@ -1,3 +1,5 @@
+// This source file is based on mock4net by Alexandre Victoor which is licensed under the Apache 2.0 License.
+// For more details see 'mock4net/LICENSE.txt' and 'mock4net/readme.md' in this project root.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -341,11 +343,25 @@ namespace WireMock.ResponseBuilders
 
             if (ProxyUrl != null && _httpClientForProxy != null)
             {
-                var requestUri = new Uri(requestMessage.Url);
-                var proxyUri = new Uri(ProxyUrl);
-                var proxyUriWithRequestPathAndQuery = new Uri(proxyUri, requestUri.PathAndQuery);
+                string RemoveFirstOccurrence(string source, string find)
+                {
+                    int place = source.IndexOf(find, StringComparison.OrdinalIgnoreCase);
+                    return place >= 0 ? source.Remove(place, find.Length) : source;
+                }
 
-                return await HttpClientHelper.SendAsync(_httpClientForProxy, requestMessage, proxyUriWithRequestPathAndQuery.AbsoluteUri, !settings.DisableJsonBodyParsing.GetValueOrDefault(false));
+                var requestUri = new Uri(requestMessage.Url);
+
+                // Build the proxy url and skip duplicates
+                string extra = RemoveFirstOccurrence(requestUri.LocalPath.TrimEnd('/'), new Uri(ProxyUrl).LocalPath.TrimEnd('/'));
+                requestMessage.ProxyUrl = ProxyUrl + extra + requestUri.Query;
+
+                return await HttpClientHelper.SendAsync(
+                    _httpClientForProxy,
+                    requestMessage,
+                    requestMessage.ProxyUrl,
+                    !settings.DisableJsonBodyParsing.GetValueOrDefault(false),
+                    !settings.DisableRequestBodyDecompressing.GetValueOrDefault(false)
+                );
             }
 
             ResponseMessage responseMessage;
