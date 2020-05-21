@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using WireMock.Matchers;
 using WireMock.Validation;
 #if !USE_ASPNETCORE
 using Microsoft.Owin;
@@ -16,13 +18,23 @@ namespace WireMock.Owin
   internal class IgnorePrefixesMiddleware : OwinMiddleware
   {
     private readonly IWireMockMiddlewareOptions m_options;
+
+    private List<WildcardMatcher> m_matchers;
     
 #if !USE_ASPNETCORE
     public IgnorePrefixesMiddleware(OwinMiddleware p_next, IWireMockMiddlewareOptions p_options) : base(p_next)
     {
       Check.NotNull(p_options, nameof(p_options));
 
+      m_matchers = new List<WildcardMatcher>();
       m_options = p_options;
+      if (m_options.IgnorePrefixURLs != null)
+      {
+        foreach (string prefix in m_options.IgnorePrefixURLs)
+        {
+          m_matchers.Add(new WildcardMatcher(prefix, true));
+        }
+      }
     }
 #endif
 
@@ -43,9 +55,9 @@ namespace WireMock.Owin
     {
       if (m_options.IgnorePrefixURLs != null)
       {
-        foreach (string prefix in m_options.IgnorePrefixURLs)
+        foreach (WildcardMatcher matcher in m_matchers)
         {
-          if (p_ctx.Request.Path.Value.StartsWith(prefix))
+          if (matcher.IsMatch(p_ctx.Request.Path.Value) >= 0.99d)
           {
             // skip owin and go on
 #if !USE_ASPNETCORE

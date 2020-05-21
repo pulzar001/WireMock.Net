@@ -23,7 +23,7 @@ namespace WireMock.Net.IISApp
       m_settings.WatchStaticMappings = true;
       m_settings.WatchStaticMappingsInSubdirectories = true;
       m_settings.FileSystemHandler = new LocalFileSystemHandler(HttpRuntime.AppDomainAppPath);
-      m_settings.IgnorePrefixURLs = new string[] { "/Home" };
+      m_settings.IgnorePrefixURLs = new string[] { "/Hom*" };
       /*m_settings.ProxyAndRecordSettings = new ProxyAndRecordSettings()
       {
         Url = "http://www.google.com",
